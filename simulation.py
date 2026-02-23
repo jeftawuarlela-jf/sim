@@ -501,6 +501,10 @@ def main():
     )
     axes5 = ensure_axes_list(axes5, num_thresholds)
     
+    # Global y-max for binning
+    all_bin_values = [int(r['bin_distribution'].get(bl, 0)) for r in all_scenario_results for bl in bin_labels]
+    y_max_bin = max(all_bin_values) * 1.20 if max(all_bin_values) > 0 else 10
+    
     width_bin = 0.8 / len(bin_labels)
     
     for ax, rt in zip(axes5, reorder_thresholds):
