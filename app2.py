@@ -35,7 +35,7 @@ st.markdown("""
     [data-testid="stSidebar"] * { color: #e0e6ef !important; }
     [data-testid="stSidebar"] .stMarkdown h3 { color: #7eb8f7 !important; font-size: 0.85rem;
         text-transform: uppercase; letter-spacing: 1px; margin-top: 1.2rem; }
-    .run-box { background: #eaf4ff; border-left: 4px solid #2980b9;
+    .run-box { background: #1a3a2b; border-left: 4px solid #2980b9;
         padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
     .success-box { background: #eafaf1; border-left: 4px solid #27ae60;
         padding: 1rem; border-radius: 6px; }
