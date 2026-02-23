@@ -31,7 +31,9 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    [data-testid="stSidebar"] { background: #1a3d2b; }
+    .stApp { background: #2ec87a; }
+
+    [data-testid="stSidebar"] { background: #cc55cc; }
     [data-testid="stSidebar"] * { color: #d4f5e2 !important; }
     [data-testid="stSidebar"] .stMarkdown h3 { color: #2ec87a !important; font-size: 0.85rem;
         text-transform: uppercase; letter-spacing: 1px; margin-top: 1.2rem; }

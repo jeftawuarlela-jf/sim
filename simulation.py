@@ -292,6 +292,16 @@ def main():
         analysis = analyze_simulation(results_df, reorder_threshold, target_doi, date_range)
         all_scenario_results.append(analysis)
         
+    # Save detailed results for this scenario
+        if SAVE_DETAILED_RESULTS:
+            scenario_filename = f"scenario_RT{reorder_threshold}_DOI{target_doi}_detailed2.csv"
+            results_df.to_csv(os.path.join(OUTPUT_DIR, scenario_filename), index=False)
+            print(f"\n  ✓ Saved: {scenario_filename}")
+        
+    # Save daily arrivals for this scenario
+        if SAVE_DAILY_SUMMARIES:
+            daily_filename = f"scenario_RT{reorder_threshold}_DOI{target_doi}_daily2.csv"
+            analysis['daily_arrivals'].to_csv(os.path.join(OUTPUT_DIR, daily_filename), index=False)
         
        
     # Create comparison summary
