@@ -196,11 +196,6 @@ def analyze_simulation(results_df, reorder_threshold, target_doi, date_range):
     # Total unique SKUs that arrived over the period
     total_unique_skus_arrived = results_df[results_df['stock_received'] > 0]['sku_code'].nunique()
     
-    # Calculate stockout metrics
-    stockout_days = (results_df['stock_ending'] < 0).sum()
-    total_days = len(results_df)
-    stockout_rate = (stockout_days / total_days * 100) if total_days > 0 else 0
-    
     # Calculate average DOI
     avg_doi = results_df['doi'].mean()
     
@@ -227,8 +222,6 @@ def analyze_simulation(results_df, reorder_threshold, target_doi, date_range):
         'total_unique_skus_arrived': total_unique_skus_arrived,
         'total_capacity_utilization': (total_unique_skus_arrived / TOTAL_SKU_CAPACITY * 100),
         'total_orders': total_orders,
-        'stockout_days': stockout_days,
-        'stockout_rate': stockout_rate,
         'avg_doi': avg_doi,
         'daily_arrivals': daily_arrivals,
         'overload_by_day': overload_by_day,
@@ -317,7 +310,6 @@ def main():
             'Pct_Days_Over_Capacity': round(r['pct_days_over_capacity'], 2),
             'Capacity_Utilization_Pct': round(r['capacity_utilization'], 2),
             'Total_Orders': int(r['total_orders']),
-            'Stockout_Rate_Pct': round(r['stockout_rate'], 2),
             'Avg_DOI': round(r['avg_doi'], 2),
             # Add overload days by day of week
             'Overload_Monday': int(r['overload_by_day'].get('Monday', 0)),
@@ -410,104 +402,6 @@ def main():
     y_max_overload = max(all_overload_values) * 1.20 if max(all_overload_values) > 0 else 10
     
     # ========================================
-    # CHART 1: Scenario Comparison (4 metrics) — grouped by RT
-    # ========================================
-
-    
-    fig, axes_grid = plt.subplots(
-        nrows=num_thresholds, ncols=4,
-        figsize=(24, 6 * num_thresholds),
-        sharey='col'
-    )
-    if num_thresholds == 1:
-        axes_grid = axes_grid.reshape(1, -1)
-    
-    metric_configs = [
-        ('Capacity_Utilization_Pct', 'Capacity Utilization (%)', 'steelblue', 'Daily Capacity Utilization'),
-        ('Stockout_Rate_Pct', 'Stockout Rate (%)', 'coral', 'Stockout Rate'),
-        ('Total_Orders', 'Total Orders Placed', 'seagreen', 'Total Orders'),
-        ('Days_Over_Capacity', 'Days Over Capacity', 'crimson', 'Days Exceeding Capacity'),
-    ]
-    
-    x_doi = np.arange(len(target_dois))
-    
-    for row_idx, rt in enumerate(reorder_thresholds):
-        rt_df = comparison_df[comparison_df['Reorder_Threshold'] == rt]
-        
-        for col_idx, (metric, ylabel, color, title) in enumerate(metric_configs):
-            ax = axes_grid[row_idx, col_idx]
-            values = []
-            for doi in target_dois:
-                match = rt_df[rt_df['Target_DOI'] == doi]
-                values.append(match[metric].values[0] if len(match) > 0 else 0)
-            
-            bars = ax.bar(x_doi, values, color=color, alpha=0.7, edgecolor='black')
-            
-            # Add value labels
-            for bar, val in zip(bars, values):
-                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
-                       f'{val:.1f}', ha='center', va='bottom', fontsize=8)
-            
-            if metric == 'Capacity_Utilization_Pct':
-                ax.axhline(y=100, color='r', linestyle='--', linewidth=2, label='100% Capacity')
-                ax.legend(fontsize=8)
-            
-            ax.set_xlabel('Target DOI', fontsize=10)
-            ax.set_ylabel(ylabel, fontsize=10)
-            ax.set_title(f'{title}\nRT: {rt}', fontsize=11, fontweight='bold')
-            ax.set_xticks(x_doi)
-            ax.set_xticklabels([f'DOI {d}' for d in target_dois], rotation=45, ha='right', fontsize=9)
-            ax.grid(True, alpha=0.3, axis='y')
-    
-    fig.suptitle('Scenario Comparison — Grouped by Reorder Threshold', fontsize=16, fontweight='bold', y=1.01)
-    plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'scenario_comparison_charts_{run_id}.png'), dpi=300, bbox_inches='tight')
-    
-        
-    # ========================================
-    # CHART 3: Overload Days by Day of Week — grouped by RT
-    # ========================================
-    
-    fig2, axes2 = plt.subplots(
-        nrows=num_thresholds, ncols=1,
-        figsize=(16, 6 * num_thresholds),
-        sharey=True
-    )
-    axes2 = ensure_axes_list(axes2, num_thresholds)
-    
-    # Global y-max for overload
-    all_overload_values = [int(r['overload_by_day'].get(d, 0)) for r in all_scenario_results for d in day_order]
-    y_max_overload = max(all_overload_values) * 1.20 if max(all_overload_values) > 0 else 10
-    
-    for ax, rt in zip(axes2, reorder_thresholds):
-        rt_scenarios = [r for r in all_scenario_results if r['reorder_threshold'] == rt]
-        
-        for i, doi in enumerate(target_dois):
-            match = next((r for r in rt_scenarios if r['target_doi'] == doi), None)
-            overload_values = [int(match['overload_by_day'].get(d, 0)) for d in day_order] if match else [0]*len(day_order)
-            offset = (i - len(target_dois)/2 + 0.5) * width_doi
-            bars = ax.bar(x_days + offset, overload_values, width_doi, label=f'DOI {doi}',
-                         color=doi_color_map[doi], alpha=0.8, edgecolor='black')
-            for bar, val in zip(bars, overload_values):
-                if val > 0:
-                    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
-                           f'{val}', ha='center', va='bottom', fontsize=8)
-        
-        ax.set_xlabel('Day of Week', fontsize=12)
-        ax.set_ylabel('Number of Overload Days', fontsize=12)
-        ax.set_title(f'Reorder Threshold: {rt}', fontsize=13, fontweight='bold')
-        ax.set_xticks(x_days)
-        ax.set_xticklabels(day_order, fontsize=10)
-        ax.set_ylim(0, y_max_overload)
-        ax.legend(loc='upper right', fontsize=9)
-        ax.grid(True, alpha=0.3, axis='y')
-    
-    fig2.suptitle(f'Overload Days by Day of Week — Grouped by Reorder Threshold\n(Days Exceeding {DAILY_SKU_CAPACITY} SKU Capacity)',
-                  fontsize=15, fontweight='bold', y=1.01)
-    plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_overload_days_byday_{run_id}.png'), dpi=300, bbox_inches='tight')
-    
-    # ========================================
     # CHART 3b: Overload Days Transposed (X=DOIs, bars=days) — grouped by RT
     # ========================================
     
@@ -547,7 +441,7 @@ def main():
     fig2b.suptitle(f'Overload Days by Target DOI — Grouped by Reorder Threshold\n(Days Exceeding {DAILY_SKU_CAPACITY} SKU Capacity)',
                    fontsize=15, fontweight='bold', y=1.01)
     plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_overload_days_bydoi_by_rt_{run_id}.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_overload_days_bydoi_grouped_by_rt_{run_id}.png'), dpi=300, bbox_inches='tight')
     
     # ========================================
     # CHART 4: Avg Arrivals Transposed (X=DOIs, bars=days) — grouped by RT
@@ -593,53 +487,8 @@ def main():
     fig3.suptitle('Average SKU Arrivals by Target DOI — Grouped by Reorder Threshold',
                   fontsize=15, fontweight='bold', y=1.01)
     plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_avg_arrivals_bydoi_by_rt_{run_id}.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_avg_arrivals_bydoi_grouped_by_rt_{run_id}.png'), dpi=300, bbox_inches='tight')
     
-    # ========================================
-    # CHART 5: Binning Distribution (X=bins, bars=DOIs) — grouped by RT
-    # ========================================
-    
-    fig4, axes4 = plt.subplots(
-        nrows=num_thresholds, ncols=1,
-        figsize=(16, 6 * num_thresholds),
-        sharey=True
-    )
-    axes4 = ensure_axes_list(axes4, num_thresholds)
-    
-    x_bins = np.arange(len(bin_labels))
-    width_doi_bin = 0.8 / len(target_dois)
-    
-    # Global y-max for binning
-    all_bin_values = [int(r['bin_distribution'].get(bl, 0)) for r in all_scenario_results for bl in bin_labels]
-    y_max_bin = max(all_bin_values) * 1.20 if max(all_bin_values) > 0 else 10
-    
-    for ax, rt in zip(axes4, reorder_thresholds):
-        rt_scenarios = [r for r in all_scenario_results if r['reorder_threshold'] == rt]
-        
-        for i, doi in enumerate(target_dois):
-            match = next((r for r in rt_scenarios if r['target_doi'] == doi), None)
-            bin_values = [int(match['bin_distribution'].get(bl, 0)) for bl in bin_labels] if match else [0]*len(bin_labels)
-            offset = (i - len(target_dois)/2 + 0.5) * width_doi_bin
-            bars = ax.bar(x_bins + offset, bin_values, width_doi_bin, label=f'DOI {doi}',
-                         color=doi_color_map[doi], alpha=0.8, edgecolor='black')
-            for bar, val in zip(bars, bin_values):
-                if val > 0:
-                    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
-                           f'{val}', ha='center', va='bottom', fontsize=7)
-        
-        ax.set_xlabel('Daily Arrivals Range (SKUs)', fontsize=12)
-        ax.set_ylabel('Number of Days', fontsize=12)
-        ax.set_title(f'Reorder Threshold: {rt}', fontsize=13, fontweight='bold')
-        ax.set_xticks(x_bins)
-        ax.set_xticklabels(bin_labels, fontsize=10)
-        ax.set_ylim(0, y_max_bin)
-        ax.legend(loc='upper right', fontsize=9)
-        ax.grid(True, alpha=0.3, axis='y')
-    
-    fig4.suptitle('Daily Arrivals Distribution by Bin — Grouped by Reorder Threshold\n(Excluding Sundays)',
-                  fontsize=15, fontweight='bold', y=1.01)
-    plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_binning_distribution_{run_id}.png'), dpi=300, bbox_inches='tight')
     
     # ========================================
     # CHART 6: Transposed Binning (X=DOIs, bars=bins) — grouped by RT
@@ -731,7 +580,7 @@ def main():
     fig7.suptitle('Average SKU Arrivals by Reorder Threshold — Grouped by Target DOI',
                   fontsize=15, fontweight='bold', y=1.01)
     plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_avg_arrivals_byrt_by_doi_{run_id}.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_avg_arrivals_byrt_grouped_by_doi_{run_id}.png'), dpi=300, bbox_inches='tight')
     
     # ========================================
     # CHART 8: Overload Days (X=RT, bars=days) — subplots by DOI
@@ -773,7 +622,7 @@ def main():
     fig8.suptitle(f'Overload Days by Reorder Threshold — Grouped by Target DOI\n(Days Exceeding {DAILY_SKU_CAPACITY} SKU Capacity)',
                   fontsize=15, fontweight='bold', y=1.01)
     plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_overload_days_byrt_by_doi_{run_id}.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_overload_days_by_rt_grouped_by_doi_{run_id}.png'), dpi=300, bbox_inches='tight')
     
     
     # ========================================
@@ -818,7 +667,7 @@ def main():
     fig9.suptitle('Daily Arrivals Distribution by Reorder Threshold — Grouped by Target DOI',
                   fontsize=15, fontweight='bold', y=1.01)
     plt.tight_layout()
-    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_binning_distribution_byrt_by_doi_{run_id}.png'), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(OUTPUT_DIR, f'comparison_binning_distribution_by_rt_grouped_by_doi_{run_id}.png'), dpi=300, bbox_inches='tight')
 
     # ========================================
     # CHART 10: Boxplot of Daily Arrivals — grouped by RT, X = DOI
@@ -888,90 +737,6 @@ def main():
     )
     plt.close(fig10)
 
-    # ========================================
-    # CHART 11: Scatter — Avg vs Max Daily Arrivals per Scenario
-    # ========================================
-
-    fig11, ax11 = plt.subplots(figsize=(12, 8))
-
-    for r in all_scenario_results:
-        rt  = r['reorder_threshold']
-        doi = r['target_doi']
-        x   = r['avg_daily_skus']   # horizontal axis
-        y   = r['max_daily_skus']   # vertical axis
-
-        # Color by RT, marker shape by DOI
-        color  = doi_color_map[doi]
-        marker = 'o'
-
-        ax11.scatter(x, y, color=color, marker=marker,
-                     s=120, edgecolors='black', linewidths=0.8, zorder=3)
-
-        # Label each dot
-        ax11.annotate(
-            f'RT{rt}\nDOI{doi}',
-            xy=(x, y),
-            xytext=(6, 4),
-            textcoords='offset points',
-            fontsize=8,
-            color='dimgray'
-        )
-
-    # Capacity reference lines
-    ax11.axvline(x=DAILY_SKU_CAPACITY, color='red', linestyle='--',
-                 linewidth=1.8, label=f'Avg Capacity limit ({DAILY_SKU_CAPACITY})')
-    ax11.axhline(y=DAILY_SKU_CAPACITY, color='orange', linestyle='--',
-                 linewidth=1.8, label=f'Max Capacity limit ({DAILY_SKU_CAPACITY})')
-
-    # Shade the "safe zone" — avg AND max both under capacity
-    ax11.axvspan(0, DAILY_SKU_CAPACITY, alpha=0.04, color='green')
-    ax11.axhspan(0, DAILY_SKU_CAPACITY, alpha=0.04, color='green')
-
-    # Add a diagonal reference line (max = avg), shows how "spiky" each scenario is
-    # Points far above the diagonal = high variance/spikiness
-    combined_max = max(r['max_daily_skus'] for r in all_scenario_results) * 1.1
-    ax11.plot([0, combined_max], [0, combined_max],
-              color='gray', linestyle=':', linewidth=1.2,
-              label='Max = Avg (no variance)')
-
-    # Build a custom legend for DOI colors
-    doi_handles = [
-        plt.Line2D([0], [0], marker='o', color='w',
-                   markerfacecolor=doi_color_map[doi],
-                   markeredgecolor='black', markersize=9,
-                   label=f'DOI {doi}')
-        for doi in target_dois
-    ]
-
-    first_legend = ax11.legend(
-        handles=doi_handles,
-        title='Target DOI',
-        loc='upper left',
-        fontsize=9
-    )
-    ax11.add_artist(first_legend)
-    ax11.legend(loc='lower right', fontsize=9)  # capacity + diagonal lines
-
-    ax11.set_xlabel('Average Daily SKUs Arrived', fontsize=12)
-    ax11.set_ylabel('Maximum Daily SKUs Arrived (single worst day)', fontsize=12)
-    ax11.set_title(
-        'Avg vs Max Daily Arrivals per Scenario\n'
-        'Dots far above the diagonal = high day-to-day variance (spiky)',
-        fontsize=13, fontweight='bold'
-    )
-    ax11.grid(True, alpha=0.3)
-    ax11.set_xlim(left=0)
-    ax11.set_ylim(bottom=0)
-
-    plt.tight_layout()
-    plt.savefig(
-        os.path.join(OUTPUT_DIR, f'scatter_avg_vs_max_arrivals_{run_id}.png'),
-        dpi=300, bbox_inches='tight'
-    )
-    plt.close(fig11)
-
-
-    
     # ========================================
     # SUMMARY
     # ========================================
