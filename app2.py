@@ -31,32 +31,22 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    .stApp { background: #2ec87a; }
-
-    [data-testid="stSidebar"] { background: #cc55cc; }
-    [data-testid="stSidebar"] * { color: #d4f5e2 !important; }
-    [data-testid="stSidebar"] .stMarkdown h3 { color: #2ec87a !important; font-size: 0.85rem;
+    [data-testid="stSidebar"] { background: #1e2a38; }
+    [data-testid="stSidebar"] * { color: #e0e6ef !important; }
+    [data-testid="stSidebar"] .stMarkdown h3 { color: #7eb8f7 !important; font-size: 0.85rem;
         text-transform: uppercase; letter-spacing: 1px; margin-top: 1.2rem; }
-
-    .run-box { background: #e8f5ee; border-left: 4px solid #3a5fc8;
+    .run-box { background: #eaf4ff; border-left: 4px solid #2980b9;
         padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
-
-    .success-box { background: #f5e8f5; border-left: 4px solid #cc55cc;
+    .success-box { background: #eafaf1; border-left: 4px solid #27ae60;
         padding: 1rem; border-radius: 6px; }
-
-    .log-box { background: #0d1f15; color: #a8d5b5; font-family: monospace;
+    .log-box { background: #0d1117; color: #c9d1d9; font-family: monospace;
         font-size: 0.78rem; padding: 1rem; border-radius: 6px;
-        max-height: 400px; overflow-y: auto; white-space: pre-wrap;
-        border: 1px solid #2ec87a; }
-
-    div[data-testid="metric-container"] { background: #f0faf5;
-        border: 1px solid #3a5fc8; border-radius: 8px; padding: 0.5rem; }
-
-    .stButton > button { background: #3a5fc8; color: white; border: none;
-        border-radius: 6px; }
-    .stButton > button:hover { background: #cc55cc; color: white; }
+        max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+    div[data-testid="metric-container"] { background: #f7f9fc;
+        border: 1px solid #e0e6ef; border-radius: 8px; padding: 0.5rem; }
 </style>
 """, unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────
 # Sidebar – Configuration
 # ─────────────────────────────────────────────────────────────
