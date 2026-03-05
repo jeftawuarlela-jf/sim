@@ -243,16 +243,7 @@ if all_files_uploaded:
     jc2.metric("✅ Matched",        n_matched,   help="Lead time found via File 2 × File 3")
     jc3.metric("⚠️ Unmatched",      n_unmatched, help="No lead time in File 2 for their active supplier — a single default will be applied")
 
-    # Show net_price status
-    if "net_price" in merged_df.columns:
-        n_with_price = merged_df["net_price"].notna().sum()
-        n_total_rows = len(merged_df)
-        st.info(f"💰 **Net Price loaded** — {n_with_price}/{n_total_rows} rows have a price value. "
-                f"The simulation will calculate inbound value (net_price × quantity) and inbound volume (total quantity) each day.")
-    else:
-        st.warning("⚠️ **net_price** column not found in File 3. Value calculations will be skipped. "
-                   "Volume (total inbound quantity) will still be calculated.")
-
+    
     if n_unmatched > 0:
         st.warning(
             f"**{n_unmatched} SKU(s) have no lead time.** "
@@ -486,4 +477,5 @@ else:
         | **Total SKU Capacity** | Total unique SKUs the warehouse can hold |
         | **Start / End Date** | The simulation reporting period |
         """)
+
 
