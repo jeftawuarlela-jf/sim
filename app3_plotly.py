@@ -33,43 +33,19 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* SwipeRx Color Palette */
-    :root {
-        --swipe-green: #1BCA76;
-        --swipe-blue: #2C46EE;
-        --swipe-purple: #C651BA;
-        --swipe-orange: #FA8129;
-    }
-    
-    /* Sidebar */
-    [data-testid="stSidebar"] { background: #f8faf9; border-right: 1px solid #e0e6ef; }
-    [data-testid="stSidebar"] * { color: #1e293b !important; }
-    [data-testid="stSidebar"] .stMarkdown h3 { color: var(--swipe-green) !important; font-size: 0.85rem;
-        text-transform: uppercase; letter-spacing: 1px; margin-top: 1.2rem; font-weight: bold; }
-        
-    /* Main Content Headers */
-    h1, h2, h3 { color: var(--swipe-blue) !important; }
-    
-    /* Custom Elements */
-    .run-box { background: #ebf9f1; border-left: 4px solid var(--swipe-green); color: #1e293b !important;
+    [data-testid="stSidebar"] { background: #1e2a38; }
+    [data-testid="stSidebar"] * { color: #e0e6ef !important; }
+    [data-testid="stSidebar"] .stMarkdown h3 { color: #7eb8f7 !important; font-size: 0.85rem;
+        text-transform: uppercase; letter-spacing: 1px; margin-top: 1.2rem; }
+    .run-box { background: #1a3a2b; border-left: 4px solid #2980b9;
         padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
-    .run-box strong { color: var(--swipe-blue) !important; }
-    
-    .log-box { background: #1e293b; color: var(--swipe-green); font-family: monospace;
+    .success-box { background: #eafaf1; border-left: 4px solid #27ae60;
+        padding: 1rem; border-radius: 6px; }
+    .log-box { background: #0d1117; color: #c9d1d9; font-family: monospace;
         font-size: 0.78rem; padding: 1rem; border-radius: 6px;
-        max-height: 400px; overflow-y: auto; white-space: pre-wrap; border-left: 4px solid var(--swipe-blue); }
-        
-    /* Metrics */
-    div[data-testid="metric-container"] { background: #ffffff;
-        border-top: 4px solid var(--swipe-purple); border-radius: 8px; padding: 0.5rem;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    div[data-testid="metric-container"] * { color: #1e293b !important; }
-    div[data-testid="stMetricValue"] { color: var(--swipe-orange) !important; font-weight: bold; }
-    
-    /* Primary buttons */
-    button[kind="primary"] { background-color: var(--swipe-green) !important; color: white !important; border: none !important; }
-    button[kind="primary"]:hover { background-color: var(--swipe-blue) !important; }
-    button[kind="primary"] * { color: white !important; }
+        max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+    div[data-testid="metric-container"] { background: #f7f9fc;
+        border: 1px solid #e0e6ef; border-radius: 8px; padding: 0.5rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -510,3 +486,4 @@ else:
         | **Total SKU Capacity** | Total unique SKUs the warehouse can hold |
         | **Start / End Date** | The simulation reporting period |
         """)
+
