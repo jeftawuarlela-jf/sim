@@ -70,6 +70,20 @@ st.markdown("""
     button[kind="primary"] { background-color: var(--swipe-green) !important; color: white !important; border: none !important; }
     button[kind="primary"]:hover { background-color: var(--swipe-blue) !important; }
     button[kind="primary"] * { color: white !important; }
+    /* Number inputs & Date inputs */
+    input[type="number"], input[type="text"] {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border: 1px solid #e0e6ef !important;
+    border-radius: 6px !important;
+    }
+
+    /* The +/- stepper buttons */
+    button[data-testid="stNumberInputStepDown"],
+    button[data-testid="stNumberInputStepUp"] {
+        background-color: #ebf9f1 !important;
+        color: var(--swipe-green) !important;
+    }
 
     /* File Uploader Box */
     [data-testid="stFileUploader"] {
@@ -111,6 +125,8 @@ st.markdown("""
     [data-testid="stFileUploaderDropzone"] button * {
         color: white !important;
     }
+
+    
 </style>
 """, unsafe_allow_html=True)
 
