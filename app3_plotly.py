@@ -125,7 +125,31 @@ st.markdown("""
     [data-testid="stFileUploaderDropzone"] button * {
         color: white !important;
     }
-
+        /* Number input container */
+    [data-testid="stNumberInput"] input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Step buttons (+ and -) */
+    [data-testid="stNumberInputStepUp"],
+    [data-testid="stNumberInputStepDown"] {
+        background-color: var(--swipe-green) !important;
+        border: 1px solid var(--swipe-green) !important;
+    }
+    
+    /* The arrow icons inside the buttons */
+    [data-testid="stNumberInputStepUp"] svg,
+    [data-testid="stNumberInputStepDown"] svg {
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
+        color: #ffffff !important;
+    }
+    
+    [data-testid="stNumberInputStepUp"]:hover,
+    [data-testid="stNumberInputStepDown"]:hover {
+        background-color: var(--swipe-blue) !important;
+}
     
 </style>
 """, unsafe_allow_html=True)
