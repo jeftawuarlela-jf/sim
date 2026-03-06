@@ -70,6 +70,47 @@ st.markdown("""
     button[kind="primary"] { background-color: var(--swipe-green) !important; color: white !important; border: none !important; }
     button[kind="primary"]:hover { background-color: var(--swipe-blue) !important; }
     button[kind="primary"] * { color: white !important; }
+
+    /* File Uploader Box */
+    [data-testid="stFileUploader"] {
+        background-color: #ffffff !important;
+        border: 2px dashed var(--swipe-green) !important;
+        border-radius: 10px !important;
+        padding: 0.5rem !important;
+    }
+
+    /* The inner drop zone area */
+    [data-testid="stFileUploaderDropzone"] {
+        background-color: #f0faf5 !important;
+        border-radius: 8px !important;
+    }
+
+    /* "Drag and drop" text */
+    [data-testid="stFileUploaderDropzoneInstructions"] p,
+    [data-testid="stFileUploaderDropzoneInstructions"] small {
+        color: #1e293b !important;
+    }
+
+    /* "Limit 200MB" text */
+    [data-testid="stFileUploaderDropzone"] small {
+        color: #64748b !important;
+    }
+
+    /* Browse Files button */
+    [data-testid="stFileUploaderDropzone"] button {
+        background-color: var(--swipe-green) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] button:hover {
+        background-color: var(--swipe-blue) !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] button * {
+        color: white !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
