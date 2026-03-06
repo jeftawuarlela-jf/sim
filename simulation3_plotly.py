@@ -24,6 +24,10 @@ except ImportError:
     OUTPUT_DIR = 'simulation_results'
     SAVE_DETAILED_RESULTS = True
     SAVE_DAILY_SUMMARIES = True
+    DAY_PROPORTIONS = {
+        'Monday': 1/7, 'Tuesday': 1/7, 'Wednesday': 1/7,
+        'Thursday': 1/7, 'Friday': 1/7, 'Saturday': 1/7, 'Sunday': 1/7
+    }
 
 if isinstance(START_DATE, tuple):
     START_DATE = datetime(*START_DATE)
@@ -68,7 +72,8 @@ def run_single_simulation(sku_info, reorder_threshold, target_doi, date_range):
 
             orders_in_transit = [order for order in orders_in_transit if order[0] != date]
 
-            sales = quantity_sold_per_day
+            day_name = date.day_name()
+            sales = (quantity_sold_per_day * 7) * DAY_PROPORTIONS.get(day_name, 1/7)
             stock -= sales
 
             doi = stock / quantity_sold_per_day if quantity_sold_per_day > 0 else 999
@@ -89,8 +94,11 @@ def run_single_simulation(sku_info, reorder_threshold, target_doi, date_range):
                     arrival_date = add_working_days(date, lead_time_days)
                     orders_in_transit.append((arrival_date, order_quantity))
 
-            # Value of arriving stock = net_price * quantity received
-            stock_received_value = net_price * stock_received
+            # Value of inbound = value of arriving stock + value of existing stock (for SKUs that got inbound)
+            if stock_received > 0:
+                stock_received_value = net_price * (stock_received + stock_beginning)
+            else:
+                stock_received_value = 0.0
 
             results.append({
                 'date': date,

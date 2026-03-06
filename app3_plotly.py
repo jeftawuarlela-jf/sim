@@ -33,19 +33,43 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    [data-testid="stSidebar"] { background: #1e2a38; }
-    [data-testid="stSidebar"] * { color: #e0e6ef !important; }
-    [data-testid="stSidebar"] .stMarkdown h3 { color: #7eb8f7 !important; font-size: 0.85rem;
-        text-transform: uppercase; letter-spacing: 1px; margin-top: 1.2rem; }
-    .run-box { background: #1a3a2b; border-left: 4px solid #2980b9;
+    /* SwipeRx Color Palette */
+    :root {
+        --swipe-green: #1BCA76;
+        --swipe-blue: #2C46EE;
+        --swipe-purple: #C651BA;
+        --swipe-orange: #FA8129;
+    }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] { background: #f8faf9; border-right: 1px solid #e0e6ef; }
+    [data-testid="stSidebar"] * { color: #1e293b !important; }
+    [data-testid="stSidebar"] .stMarkdown h3 { color: var(--swipe-green) !important; font-size: 0.85rem;
+        text-transform: uppercase; letter-spacing: 1px; margin-top: 1.2rem; font-weight: bold; }
+        
+    /* Main Content Headers */
+    h1, h2, h3 { color: var(--swipe-blue) !important; }
+    
+    /* Custom Elements */
+    .run-box { background: #ebf9f1; border-left: 4px solid var(--swipe-green); color: #1e293b !important;
         padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
-    .success-box { background: #eafaf1; border-left: 4px solid #27ae60;
-        padding: 1rem; border-radius: 6px; }
-    .log-box { background: #0d1117; color: #c9d1d9; font-family: monospace;
+    .run-box strong { color: var(--swipe-blue) !important; }
+    
+    .log-box { background: #1e293b; color: var(--swipe-green); font-family: monospace;
         font-size: 0.78rem; padding: 1rem; border-radius: 6px;
-        max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
-    div[data-testid="metric-container"] { background: #f7f9fc;
-        border: 1px solid #e0e6ef; border-radius: 8px; padding: 0.5rem; }
+        max-height: 400px; overflow-y: auto; white-space: pre-wrap; border-left: 4px solid var(--swipe-blue); }
+        
+    /* Metrics */
+    div[data-testid="metric-container"] { background: #ffffff;
+        border-top: 4px solid var(--swipe-purple); border-radius: 8px; padding: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    div[data-testid="metric-container"] * { color: #1e293b !important; }
+    div[data-testid="stMetricValue"] { color: var(--swipe-orange) !important; font-weight: bold; }
+    
+    /* Primary buttons */
+    button[kind="primary"] { background-color: var(--swipe-green) !important; color: white !important; border: none !important; }
+    button[kind="primary"]:hover { background-color: var(--swipe-blue) !important; }
+    button[kind="primary"] * { color: white !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -74,9 +98,16 @@ with st.sidebar:
         type=["csv"], key="file_supplier",
     )
 
-    all_files_uploaded = (file_stock is not None and
-                          file_leadtime is not None and
-                          file_supplier is not None)
+    st.markdown("### 📁 File 4 — Day-of-Week Sales Proportions")
+    file_proportion = st.file_uploader(
+        "day_of_week · proportion  (7 rows Mon–Sun, must sum to 1.0)",
+        type=["csv"], key="file_proportion",
+    )
+
+    all_files_uploaded = (file_stock      is not None and
+                          file_leadtime   is not None and
+                          file_supplier   is not None and
+                          file_proportion is not None)
 
     st.markdown("### 🔄 Reorder Trigger (RT)")
     col1, col2 = st.columns(2)
@@ -170,7 +201,7 @@ def build_merged_df(stock_bytes: bytes, leadtime_bytes: bytes, supplier_bytes: b
 # ─────────────────────────────────────────────────────────────
 # Config writer
 # ─────────────────────────────────────────────────────────────
-def write_config(work_dir: str, output_dir: str, csv_path: str) -> None:
+def write_config(work_dir: str, output_dir: str, csv_path: str, day_proportions: dict) -> None:
     content = textwrap.dedent(f"""\
         REORDER_THRESHOLD_RANGE = range({rt_start}, {rt_stop + 1})
         TARGET_DOI_RANGE        = range({doi_start}, {doi_stop + 1})
@@ -182,6 +213,7 @@ def write_config(work_dir: str, output_dir: str, csv_path: str) -> None:
         OUTPUT_DIR = r'{output_dir}'
         SAVE_DETAILED_RESULTS = {save_detailed}
         SAVE_DAILY_SUMMARIES  = {save_daily}
+        DAY_PROPORTIONS = {day_proportions}
     """)
     with open(os.path.join(work_dir, "config.py"), "w") as f:
         f.write(content)
@@ -191,7 +223,7 @@ def write_config(work_dir: str, output_dir: str, csv_path: str) -> None:
 # Main page
 # ─────────────────────────────────────────────────────────────
 st.title("📦 Supply Chain Simulation")
-st.caption("Upload your 3 data files in the sidebar, configure parameters, then click **Run Simulation**.")
+st.caption("Upload your 4 data files in the sidebar, configure parameters, then click **Run Simulation**.")
 
 n_rt        = max(0, rt_stop  - rt_start  + 1)
 n_doi       = max(0, doi_stop - doi_start + 1)
@@ -209,13 +241,15 @@ st.divider()
 # ─────────────────────────────────────────────────────────────
 st.markdown("### 📂 Data Preparation")
 
-s1, s2, s3 = st.columns(3)
-s1.markdown(("✅" if file_stock    else "⏳") + " **File 1** — Stock & Sales\n\n" +
-            (f"`{file_stock.name}`"    if file_stock    else "*not uploaded*"))
-s2.markdown(("✅" if file_leadtime else "⏳") + " **File 2** — Lead Times\n\n" +
-            (f"`{file_leadtime.name}`" if file_leadtime else "*not uploaded*"))
-s3.markdown(("✅" if file_supplier else "⏳") + " **File 3** — Active Supplier + Price\n\n" +
-            (f"`{file_supplier.name}`" if file_supplier else "*not uploaded*"))
+s1, s2, s3, s4 = st.columns(4)
+s1.markdown(("✅" if file_stock      else "⏳") + " **File 1** — Stock & Sales\n\n" +
+            (f"`{file_stock.name}`"      if file_stock      else "*not uploaded*"))
+s2.markdown(("✅" if file_leadtime   else "⏳") + " **File 2** — Lead Times\n\n" +
+            (f"`{file_leadtime.name}`"   if file_leadtime   else "*not uploaded*"))
+s3.markdown(("✅" if file_supplier   else "⏳") + " **File 3** — Active Supplier + Price\n\n" +
+            (f"`{file_supplier.name}`"   if file_supplier   else "*not uploaded*"))
+s4.markdown(("✅" if file_proportion else "⏳") + " **File 4** — Day Proportions\n\n" +
+            (f"`{file_proportion.name}`" if file_proportion else "*not uploaded*"))
 
 edited_unmatched = None
 has_unresolved   = False
@@ -243,7 +277,37 @@ if all_files_uploaded:
     jc2.metric("✅ Matched",        n_matched,   help="Lead time found via File 2 × File 3")
     jc3.metric("⚠️ Unmatched",      n_unmatched, help="No lead time in File 2 for their active supplier — a single default will be applied")
 
-    
+    # Show net_price status
+    if "net_price" in merged_df.columns:
+        n_with_price = merged_df["net_price"].notna().sum()
+        n_total_rows = len(merged_df)
+        st.info(f"💰 **Net Price loaded** — {n_with_price}/{n_total_rows} rows have a price value. "
+                f"The simulation will calculate inbound value (net_price × quantity) and inbound volume (total quantity) each day.")
+    else:
+        st.warning("⚠️ **net_price** column not found in File 3. Value calculations will be skipped. "
+                   "Volume (total inbound quantity) will still be calculated.")
+
+    # ── Validate and parse File 4 (Day Proportions) ─────────────
+    try:
+        df_prop = pd.read_csv(io.BytesIO(file_proportion.getvalue()))
+        df_prop.columns = df_prop.columns.str.strip().str.lower()
+        assert "day_of_week" in df_prop.columns and "proportion" in df_prop.columns, \
+            "File 4 must have columns: day_of_week, proportion"
+        assert len(df_prop) == 7, \
+            f"File 4 must have exactly 7 rows (one per day), found {len(df_prop)}"
+        prop_sum = df_prop["proportion"].sum()
+        assert abs(prop_sum - 1.0) <= 0.001, \
+            f"Proportions must sum to 1.0 (±0.001), got {prop_sum:.6f}"
+        day_proportions = dict(zip(
+            df_prop["day_of_week"].str.strip(),
+            df_prop["proportion"]
+        ))
+        st.success("✅ Day proportions loaded — " +
+                   ", ".join(f"{d}: {p:.1%}" for d, p in day_proportions.items()))
+    except Exception as e:
+        st.error(f"❌ File 4 error: {e}")
+        st.stop()
+
     if n_unmatched > 0:
         st.warning(
             f"**{n_unmatched} SKU(s) have no lead time.** "
@@ -319,7 +383,7 @@ if run_clicked:
     csv_path = os.path.join(work_dir, "merged_data.csv")
     final_df.to_csv(csv_path, index=False)
 
-    write_config(work_dir, out_dir, csv_path)
+    write_config(work_dir, out_dir, csv_path, day_proportions)
 
     # ── Use simulation3_plotly.py (value + volume edition) ──
     sim_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "simulation3_plotly.py")
@@ -440,7 +504,7 @@ else:
     <div class="run-box">
     <strong>How to use:</strong><br>
     1. Upload <strong>File 1</strong> (Stock &amp; Sales), <strong>File 2</strong> (Lead Times),
-       and <strong>File 3</strong> (Active Supplier + Price) using the sidebar<br>
+       <strong>File 3</strong> (Active Supplier + Price), and <strong>File 4</strong> (Day Proportions) using the sidebar<br>
     2. The app automatically joins the files and flags any SKUs with no lead time<br>
     3. Fill in lead times manually for any flagged SKUs in the table above<br>
     4. Adjust simulation parameters in the sidebar as needed<br>
@@ -455,6 +519,7 @@ else:
         | **File 1 — Stock & Sales** | `sku_code`, `product_name`, `tanggal_update`, `stock`, `quantity_sold_per_day`, `doi` | One row per SKU per date |
         | **File 2 — Lead Times** | `sku_code`, `supplier`, `lead_time_days` | One SKU can have multiple suppliers |
         | **File 3 — Active Supplier** | `sku_code`, `supplier`, `net_price` | One row per SKU — the currently active supplier + unit price |
+        | **File 4 — Day Proportions** | `day_of_week`, `proportion` | 7 rows (Mon–Sun), must sum to 1.0 |
 
         **How the join works:**
         File 3 identifies the active supplier for each SKU and provides the unit price.
@@ -477,5 +542,3 @@ else:
         | **Total SKU Capacity** | Total unique SKUs the warehouse can hold |
         | **Start / End Date** | The simulation reporting period |
         """)
-
-
