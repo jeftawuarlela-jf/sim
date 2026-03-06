@@ -334,16 +334,7 @@ if all_files_uploaded:
     jc2.metric("✅ Matched",        n_matched,   help="Lead time found via File 2 × File 3")
     jc3.metric("⚠️ Unmatched",      n_unmatched, help="No lead time in File 2 for their active supplier — a single default will be applied")
 
-    # Show net_price status
-    if "net_price" in merged_df.columns:
-        n_with_price = merged_df["net_price"].notna().sum()
-        n_total_rows = len(merged_df)
-        st.info(f"💰 **Net Price loaded** — {n_with_price}/{n_total_rows} rows have a price value. "
-                f"The simulation will calculate inbound value (net_price × quantity) and inbound volume (total quantity) each day.")
-    else:
-        st.warning("⚠️ **net_price** column not found in File 3. Value calculations will be skipped. "
-                   "Volume (total inbound quantity) will still be calculated.")
-
+    
     # ── Validate and parse File 4 (Day Proportions) ─────────────
     try:
         df_prop = pd.read_csv(io.BytesIO(file_proportion.getvalue()))
