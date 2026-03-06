@@ -81,7 +81,7 @@ st.markdown("""
     /* The +/- stepper buttons */
     button[data-testid="stNumberInputStepDown"],
     button[data-testid="stNumberInputStepUp"] {
-        background-color: #ebf9f1 !important;
+        background-color: var(--swipe-green) !important;
         color: var(--swipe-green) !important;
     }
 
