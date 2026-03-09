@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import math
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -87,8 +88,9 @@ def run_single_simulation(sku_info, reorder_threshold, target_doi, date_range):
 
             if reorder_trigger:
                 estimated_calendar_days = lead_time_days * 1.17
-                order_quantity = (target_doi + estimated_calendar_days) * quantity_sold_per_day - stock
-
+                raw_order_quantity = (target_doi + estimated_calendar_days) * quantity_sold_per_day - stock
+                order_quantity = math.ceil(raw_order_quantity)
+                
                 if order_quantity > 0:
                     order_placed = True
                     arrival_date = add_working_days(date, lead_time_days)
@@ -96,7 +98,7 @@ def run_single_simulation(sku_info, reorder_threshold, target_doi, date_range):
 
             # Value of inbound = value of arriving stock + value of existing stock (for SKUs that got inbound)
             if stock_received > 0:
-                stock_received_value = net_price * (stock_received + stock_beginning)
+                stock_received_value = net_price * math.floor(stock)
             else:
                 stock_received_value = 0.0
 
