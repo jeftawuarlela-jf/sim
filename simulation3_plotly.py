@@ -90,17 +90,15 @@ def run_single_simulation(sku_info, reorder_threshold, target_doi, date_range):
                 estimated_calendar_days = lead_time_days * 1.17
                 raw_order_quantity = (target_doi + estimated_calendar_days) * quantity_sold_per_day - stock
                 order_quantity = math.ceil(raw_order_quantity)
-                
+
                 if order_quantity > 0:
                     order_placed = True
                     arrival_date = add_working_days(date, lead_time_days)
                     orders_in_transit.append((arrival_date, order_quantity))
 
-            # Value of inbound = value of arriving stock + value of existing stock (for SKUs that got inbound)
-            if stock_received > 0:
-                stock_received_value = net_price * math.floor(stock)
-            else:
-                stock_received_value = 0.0
+            # Value calculation: floor(ending_stock * net_price) for all products
+            # If stock is below zero, count value as zero
+            inventory_value = math.floor(max(0, stock)) * net_price
 
             results.append({
                 'date': date,
@@ -111,7 +109,7 @@ def run_single_simulation(sku_info, reorder_threshold, target_doi, date_range):
                 'stock_beginning': stock_beginning,
                 'sales': sales,
                 'stock_received': stock_received,
-                'stock_received_value': stock_received_value,
+                'inventory_value': inventory_value,
                 'stock_ending': stock,
                 'doi': doi,
                 'order_placed': order_placed,
@@ -133,9 +131,9 @@ def analyze_simulation(results_df, reorder_threshold, target_doi, date_range):
         inbound_quantity=('stock_received', 'sum')
     ).reset_index()
 
-    # ── Inbound VALUE: sum of (net_price * qty) per day ──
+    # ── TOTAL INVENTORY VALUE: sum of (net_price * qty) per day ──
     daily_value = results_df.groupby('date').agg(
-        inbound_value=('stock_received_value', 'sum')
+        total_inventory_value=('inventory_value', 'sum')
     ).reset_index()
 
     # Merge all daily metrics
@@ -158,9 +156,9 @@ def analyze_simulation(results_df, reorder_threshold, target_doi, date_range):
     total_volume = daily_arrivals['inbound_quantity'].sum()
 
     # Value stats
-    avg_daily_value = daily_arrivals['inbound_value'].mean()
-    max_daily_value = daily_arrivals['inbound_value'].max()
-    total_value = daily_arrivals['inbound_value'].sum()
+    avg_daily_value = daily_arrivals['total_inventory_value'].mean()
+    max_daily_value = daily_arrivals['total_inventory_value'].max()
+    total_value = daily_arrivals['total_inventory_value'].sum()
 
     days_over_capacity = (daily_arrivals['unique_skus_arrived'] > DAILY_SKU_CAPACITY).sum()
 
@@ -184,7 +182,7 @@ def analyze_simulation(results_df, reorder_threshold, target_doi, date_range):
 
     # Volume & Value by day of week
     avg_volume_by_day = daily_arrivals.groupby('day_of_week')['inbound_quantity'].mean().to_dict()
-    avg_value_by_day = daily_arrivals.groupby('day_of_week')['inbound_value'].mean().to_dict()
+    avg_value_by_day = daily_arrivals.groupby('day_of_week')['total_inventory_value'].mean().to_dict()
 
     return {
         'reorder_threshold': reorder_threshold,
@@ -304,9 +302,9 @@ def main():
             'Avg_Daily_Inbound_Qty': round(r['avg_daily_volume'], 2),
             'Max_Daily_Inbound_Qty': round(r['max_daily_volume'], 2),
             'Total_Inbound_Qty': round(r['total_volume'], 2),
-            'Avg_Daily_Inbound_Value': round(r['avg_daily_value'], 2),
-            'Max_Daily_Inbound_Value': round(r['max_daily_value'], 2),
-            'Total_Inbound_Value': round(r['total_value'], 2),
+            'Avg_Daily_Inv_Value': round(r['avg_daily_value'], 2),
+            'Max_Daily_Inv_Value': round(r['max_daily_value'], 2),
+            'Total_Inv_Value': round(r['total_value'], 2),
         }
         for day in day_order:
             row[f'Overload_{day}'] = int(r['overload_by_day'].get(day, 0))
@@ -643,7 +641,7 @@ def main():
                     f"<b>{r['date'].strftime('%a, %d %b %Y')}</b><br>"
                     f"Inbound SKUs: {int(r['unique_skus_arrived'])}<br>"
                     f"Inbound Qty: {int(r['inbound_quantity']):,}<br>"
-                    f"Inbound Value: {r['inbound_value']:,.0f}<br>"
+                    f"Inventory Value: {r['total_inventory_value']:,.0f}<br>"
                     f"Bin: {r['bin_label']}"
                 ), axis=1)
             fig_cal.add_trace(go.Scatter(
@@ -712,7 +710,7 @@ def main():
     print("  ✓ Chart 9: Avg Daily Inbound Volume by DOI (grouped by RT)")
 
     # ========================================
-    # NEW CHART 10: Avg Daily Inbound Value by DOI — Grouped by RT
+    # NEW CHART 10: Avg Daily Inbventory Value by DOI — Grouped by RT
     # ========================================
     if has_price:
         fig10 = make_subplots(rows=num_thresholds, cols=1,
@@ -732,15 +730,15 @@ def main():
                     text=[f'{v:,.0f}' for v in day_values], textposition='outside', textfont_size=9,
                     showlegend=(row_idx == 1), legendgroup=day,
                 ), row=row_idx, col=1)
-            fig10.update_yaxes(title_text='Avg Inbound Value', range=[0, y_max_val], row=row_idx, col=1)
+            fig10.update_yaxes(title_text='Avg Inventory Value', range=[0, y_max_val], row=row_idx, col=1)
             fig10.update_xaxes(title_text='Target DOI', row=row_idx, col=1)
 
         fig10.update_layout(barmode='group',
-            title_text='Average Daily Inbound Value (net_price × qty) by DOI — Grouped by RT<br><sup>(Monetary value of arriving orders per day)</sup>',
+            title_text='Average Daily Total Inventory Value (net_price × qty) by DOI — Grouped by RT<br><sup>(Monetary value of all stock per day)</sup>',
             title_font_size=16, height=500 * num_thresholds, autosize=True, legend_title_text='Day of Week')
-        fig10.write_json(os.path.join(OUTPUT_DIR, f'comparison_avg_value_bydoi_grouped_by_rt_{run_id}.json'))
-        fig10.write_html(os.path.join(OUTPUT_DIR, f'comparison_avg_value_bydoi_grouped_by_rt_{run_id}.html'))
-        print("  ✓ Chart 10: Avg Daily Inbound Value by DOI (grouped by RT)")
+        fig10.write_json(os.path.join(OUTPUT_DIR, f'comparison_avg_inventory_value_bydoi_grouped_by_rt_{run_id}.json'))
+        fig10.write_html(os.path.join(OUTPUT_DIR, f'comparison_avg_inventory_value_bydoi_grouped_by_rt_{run_id}.html'))
+        print("  ✓ Chart 10: Avg Daily Inventory Value by DOI (grouped by RT)")
     else:
         print("  ⚠ Chart 10 skipped — no net_price data")
 
