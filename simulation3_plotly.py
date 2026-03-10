@@ -710,35 +710,40 @@ def main():
     print("  ✓ Chart 9: Avg Daily Inbound Volume by DOI (grouped by RT)")
 
     # ========================================
-    # NEW CHART 10: Avg Daily Inbventory Value by DOI — Grouped by RT
+    # NEW CHART 10: Daily Inventory Value Time Series — Grouped by RT
     # ========================================
     if has_price:
         fig10 = make_subplots(rows=num_thresholds, cols=1,
             subplot_titles=[f'Reorder Threshold: {rt}' for rt in reorder_thresholds],
             shared_yaxes=True, vertical_spacing=0.08)
 
+        # Get global max value for y-axis scaling
+        all_daily_vals = [r['daily_arrivals']['total_inventory_value'].max() for r in all_scenario_results]
+        y_max_val_ts = max(all_daily_vals) * 1.15 if max(all_daily_vals) > 0 else 100
+
         for row_idx, rt in enumerate(reorder_thresholds, 1):
             rt_scenarios = [r for r in all_scenario_results if r['reorder_threshold'] == rt]
-            for i, day in enumerate(day_order):
-                day_values = []
-                for doi in target_dois:
-                    match = next((r for r in rt_scenarios if r['target_doi'] == doi), None)
-                    day_values.append(match['avg_value_by_day'].get(day, 0) if match else 0)
-                fig10.add_trace(go.Bar(
-                    x=[f'DOI {doi}' for doi in target_dois], y=day_values, name=day,
-                    marker_color=day_color_map[day], opacity=0.8,
-                    text=[f'{v:,.0f}' for v in day_values], textposition='outside', textfont_size=9,
-                    showlegend=(row_idx == 1), legendgroup=day,
-                ), row=row_idx, col=1)
-            fig10.update_yaxes(title_text='Avg Inventory Value', range=[0, y_max_val], row=row_idx, col=1)
-            fig10.update_xaxes(title_text='Target DOI', row=row_idx, col=1)
+            
+            for doi in target_dois:
+                match = next((r for r in rt_scenarios if r['target_doi'] == doi), None)
+                if match:
+                    daily_data = match['daily_arrivals'].sort_values('date')
+                    fig10.add_trace(go.Scatter(
+                        x=daily_data['date'], y=daily_data['total_inventory_value'],
+                        mode='lines', name=f'DOI {doi}', line=dict(color=doi_color_map[doi], width=2),
+                        showlegend=(row_idx == 1), legendgroup=f'DOI {doi}',
+                    ), row=row_idx, col=1)
 
-        fig10.update_layout(barmode='group',
-            title_text='Average Daily Total Inventory Value (net_price × qty) by DOI — Grouped by RT<br><sup>(Monetary value of all stock per day)</sup>',
-            title_font_size=16, height=500 * num_thresholds, autosize=True, legend_title_text='Day of Week')
-        fig10.write_json(os.path.join(OUTPUT_DIR, f'comparison_avg_inventory_value_bydoi_grouped_by_rt_{run_id}.json'))
-        fig10.write_html(os.path.join(OUTPUT_DIR, f'comparison_avg_inventory_value_bydoi_grouped_by_rt_{run_id}.html'))
-        print("  ✓ Chart 10: Avg Daily Inventory Value by DOI (grouped by RT)")
+            fig10.update_yaxes(title_text='Inventory Value', range=[0, y_max_val_ts], row=row_idx, col=1)
+            fig10.update_xaxes(title_text='Date', row=row_idx, col=1)
+
+        fig10.update_layout(
+            title_text='Daily Total Inventory Value Over Time by DOI — Grouped by RT<br><sup>(Monetary value of all stock per day)</sup>',
+            title_font_size=16, height=500 * num_thresholds, autosize=True, legend_title_text='Target DOI',
+            hovermode='x unified')
+        fig10.write_json(os.path.join(OUTPUT_DIR, f'comparison_daily_inventory_value_ts_grouped_by_rt_{run_id}.json'))
+        fig10.write_html(os.path.join(OUTPUT_DIR, f'comparison_daily_inventory_value_ts_grouped_by_rt_{run_id}.html'))
+        print("  ✓ Chart 10: Daily Inventory Value Time Series (grouped by RT)")
     else:
         print("  ⚠ Chart 10 skipped — no net_price data")
 
