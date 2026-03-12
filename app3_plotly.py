@@ -421,7 +421,7 @@ if all_files_uploaded:
         st.dataframe(preview.head(20), use_container_width=True, hide_index=True)
 
 else:
-    st.info("Upload all 3 files in the sidebar to validate and preview your data.")
+    st.info("Upload all 4 files in the sidebar to validate and preview your data.")
 
 st.divider()
 
