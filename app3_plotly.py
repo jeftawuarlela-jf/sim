@@ -599,10 +599,6 @@ else:
         These two are inner-joined to get one lead time per SKU, then merged with File 1.
         SKUs whose active supplier has no entry in File 2 will appear in the manual input table.
         
-        **New in v3:**
-        - **Inbound Value** = `net_price × arriving quantity` each day
-        - **Inbound Volume** = total arriving quantity each day (not unique SKUs)
-        """)
 
     with st.expander("ℹ️ Parameter Guide"):
         st.markdown("""
