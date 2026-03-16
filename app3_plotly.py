@@ -598,6 +598,7 @@ else:
         File 2 provides the lead time for each SKU × supplier combination.
         These two are inner-joined to get one lead time per SKU, then merged with File 1.
         SKUs whose active supplier has no entry in File 2 will appear in the manual input table.
+        """)
         
 
     with st.expander("ℹ️ Parameter Guide"):
