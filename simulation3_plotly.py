@@ -57,7 +57,7 @@ def run_single_simulation(sku_info, reorder_threshold, target_doi, date_range):
         stock = sku_row['stock']
         quantity_sold_per_day = sku_row['quantity_sold_per_day']
         lead_time_days = int(sku_row['lead_time_days'])
-        net_price = float(sku_row['net_price']) if has_price and pd.notna(sku_row.get('net_price')) else 0.0
+        net_price = float(str(sku_row['net_price']).replace(',', '')) if has_price and pd.notna(sku_row.get('net_price')) else 0.0
 
         if quantity_sold_per_day == 0 or pd.isna(quantity_sold_per_day):
             continue
