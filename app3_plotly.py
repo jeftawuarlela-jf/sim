@@ -211,7 +211,7 @@ with st.sidebar:
                                 help="Total unique SKU count the warehouse can hold")
 
     st.markdown("### 📆 Simulation Period")
-    end_date   = st.date_input("End Date",   value=date(2026, 3, 31))
+    end_date   = st.date_input("End Date",   value=date(2026, 6, 30))
 
     st.markdown("### 💾 Output Options")
     save_detailed = st.checkbox("Save detailed per-SKU results", value=True)
